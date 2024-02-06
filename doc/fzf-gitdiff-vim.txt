@@ -1,0 +1,26 @@
+*fzf-gitdiff-vim.txt*
+
+FZF-GITDIFF-VIM                                                *fzf-gitdiff-vim*
+==============================================================================
+
+                                                           *fzf_gitdiff#FillFZF*
+
+`fzf_gitdiff#FillFZF` executes |fzf#run| with |g:fzf_gitdiff_cmd| command. You
+can define your own command like this:
+>
+	command! -nargs=* GitDiff call fzf_gitdiff#FillFZF(<f-args>)
+<
+
+OPTIONS                                                *fzf-gitdiff-vim-options*
+
+                                                             *g:fzf_gitdiff_cmd*
+
+Git diff command to execute. Possible values:
+
+  - `git diff --name-status -C` (default)
+  - `git diff --name-status`
+  - `git diff --name-only`
+
+                                                          *g:fzf_gitdiff_window*
+
+FZF window option for |fzf#run|. Default: `{ 'width': 0.5, 'height': 0.7 }`
