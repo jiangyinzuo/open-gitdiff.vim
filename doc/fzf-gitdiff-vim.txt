@@ -23,4 +23,8 @@ Git diff command to execute. Possible values:
 
                                                           *g:fzf_gitdiff_window*
 
-FZF window option for |fzf#run|. Default: `{ 'width': 0.5, 'height': 0.7 }`
+FZF window option for |fzf#run|. Default: `{ 'width': 0.8, 'height': 0.7 }`
+
+                                                         *g:fzf_gitdiff_preview*
+
+Enable FZF preview. Default: 1

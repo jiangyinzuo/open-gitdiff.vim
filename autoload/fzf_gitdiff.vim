@@ -60,10 +60,15 @@ function fzf_gitdiff#FillFZF(...)
 		let l:cmd .= ' ' . join(a:000, ' ')
 	endif
 
+	if get(g:, 'fzf_gitdiff_preview', 1)
+		let l:preview_cmd = '--preview " echo {} | cut -f2- | xargs git diff --color=always -C ' . join(a:000, ' ' ) . ' --" --preview-window "up,70%"'
+	else
+		let l:preview_cmd = ''
+	endif
 	call fzf#run(fzf#wrap(l:cmd, {
-				\ 'source': l:cmd, 'options': '--prompt "' . l:prompt . '"',
+				\ 'source': l:cmd, 'options': '--prompt "' . l:prompt . '" ' . l:preview_cmd,
 				\ 'sink': function('fzf_gitdiff#FzfSink'),
-				\ 'window': get(g:, 'fzf_gitdiff_window', { 'width': 0.5, 'height': 0.7 }),
+				\ 'window': get(g:, 'fzf_gitdiff_window', { 'width': 0.8, 'height': 0.7 }),
 				\ }))
 endfunction
 

@@ -1,6 +1,6 @@
 # fzf-gitdiff.vim
 
-![screenshot](https://github.com/jiangyinzuo/fzf-gitdiff.vim/assets/40995042/c0696f18-350d-4245-bfa0-f852cf4f5541)
+![screenshot](https://github.com/jiangyinzuo/fzf-gitdiff.vim/assets/40995042/56a6c80d-8a72-4d2b-b301-1bfd3ad75a59)
 
 [fzf-gitdiff.vim](https://github.com/jiangyinzuo/fzf-gitdiff.vim) puts
 `git diff --name-status -C` into [fzf](https://github.com/junegunn/fzf) window, then you can
@@ -29,8 +29,10 @@ let g:fzf_gitdiff_cmd = 'git diff --name-status -C'
 You can customize fzf window option with `g:fzf_gitdiff_window`:
 ```vim
 " default
-let g:fzf_gitdiff_window = { 'width': 0.5, 'height': 0.7 }
+let g:fzf_gitdiff_window = { 'width': 0.8, 'height': 0.7 }
 ```
+
+For more options, `:h fzf-gitdiff-vim-options`
 
 ## Usage
 
