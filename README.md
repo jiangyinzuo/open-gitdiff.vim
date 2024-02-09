@@ -1,6 +1,6 @@
 # fzf-gitdiff.vim
 
-![screenshot](https://github.com/jiangyinzuo/fzf-gitdiff.vim/assets/40995042/56a6c80d-8a72-4d2b-b301-1bfd3ad75a59)
+![screenshot](https://github.com/jiangyinzuo/fzf-gitdiff.vim/assets/40995042/fd9e54ef-5374-429c-879a-9c3252a12301)
 
 [fzf-gitdiff.vim](https://github.com/jiangyinzuo/fzf-gitdiff.vim) puts
 `git diff --name-status -C` into [fzf](https://github.com/junegunn/fzf) window, then you can
@@ -14,7 +14,12 @@ Install using [vim-plug](https://github.com/junegunn/vim-plug)
 Plug 'junegunn/fzf'
 Plug 'jiangyinzuo/fzf-gitdiff.vim'
 
-command! -nargs=* GitDiff call fzf_gitdiff#FillFZF(<f-args>)
+" fzf_gitdiff_comp#Complete is implemented with vim9class.
+if v:version >= 901
+    command! -nargs=* -complete=custom,fzf_gitdiff_comp#Complete GitDiff call fzf_gitdiff#FillFZF(<f-args>)
+else
+    command! -nargs=* GitDiff call fzf_gitdiff#FillFZF(<f-args>)
+endif
 ```
 
 You can customize git diff command with `g:fzf_gitdiff_cmd`:
@@ -64,5 +69,8 @@ List diffs:
 
 " git diff --name-status -C HEAD~1 HEAD
 :GitDiff HEAD~1 HEAD
+
+" git diff --name-status -C HEAD~1..HEAD
+:GitDiff HEAD~1..HEAD
 ```
 

@@ -8,7 +8,12 @@ FZF-GITDIFF-VIM                                                *fzf-gitdiff-vim*
 `fzf_gitdiff#FillFZF` executes |fzf#run| with |g:fzf_gitdiff_cmd| command. You
 can define your own command like this:
 >
-	command! -nargs=* GitDiff call fzf_gitdiff#FillFZF(<f-args>)
+	" fzf_gitdiff_comp#Complete is implemented with vim9class.
+	if v:version >= 901
+		command! -nargs=* -complete=custom,fzf_gitdiff_comp#Complete GitDiff call fzf_gitdiff#FillFZF(<f-args>)
+	else
+		command! -nargs=* GitDiff call fzf_gitdiff#FillFZF(<f-args>)
+	endif
 <
 
 OPTIONS                                                *fzf-gitdiff-vim-options*
