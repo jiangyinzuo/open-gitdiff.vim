@@ -32,4 +32,4 @@ FZF window option for |fzf#run|. Default: `{ 'width': 0.8, 'height': 0.7 }`
 
                                                          *g:fzf_gitdiff_preview*
 
-Enable FZF preview. Default: 1
+Enable FZF preview (require python3 in $PATH). Default: 1

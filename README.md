@@ -33,11 +33,15 @@ let g:fzf_gitdiff_cmd = 'git diff --name-status -C'
 
 You can customize fzf window option with `g:fzf_gitdiff_window`:
 ```vim
-" default
+" default value
 let g:fzf_gitdiff_window = { 'width': 0.8, 'height': 0.7 }
 ```
 
-For more options, `:h fzf-gitdiff-vim-options`
+Enable preview (require python3 in `$PATH`):
+```vim
+" default value
+let g:fzf_gitdiff_preview = 1
+```
 
 ## Usage
 
