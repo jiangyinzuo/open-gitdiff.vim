@@ -3,6 +3,8 @@
 
 let s:preview_py = 'python3 ' . expand('<sfile>:p:h:h') . '/fzf_preview.py '
 
+let s:state_open_command = 'tabnew'
+
 function fzf_gitdiff#FzfSink(line)
 	let l:line = split(a:line, '\t')
 
@@ -25,7 +27,7 @@ function fzf_gitdiff#FzfSink(line)
 endfunction
 
 " Reference: https://git-scm.com/docs/git-diff
-function fzf_gitdiff#FillFZF(...)
+function fzf_gitdiff#FillFZF(state_open_command, ...)
 	if v:shell_error
 		echom 'Not a git repo'
 		return
@@ -36,6 +38,8 @@ function fzf_gitdiff#FillFZF(...)
 		echoerr 'too many arguments'
 		return
 	endif
+	let s:state_open_command = a:state_open_command
+
 	if a:0 == 1 && (a:000[0] == '--staged' || a:000[0] == '--cached')
 		" HEAD, staged area
 		let t:git_diff_args = ['HEAD', '']
@@ -135,13 +139,14 @@ function fzf_gitdiff#OpenDiff(left_filename, right_filename)
 	if bufexists(l:left_bufname)
 		exe 'b ' . l:left_bufname
 	else
-		enew
+		execute s:state_open_command
 		silent! execute '0read !git show "' . left_filename  . '"  2>/dev/null'
 		exe 'file ' . l:left_bufname
 		setlocal bufhidden=hide
 		setlocal nomodifiable
 		setlocal nomodified
 		setlocal readonly
+		setlocal filetype=gitdiff
 	endif
 
 	only
@@ -166,6 +171,7 @@ function fzf_gitdiff#OpenDiff(left_filename, right_filename)
 		setlocal nomodifiable
 		setlocal nomodified
 		setlocal readonly
+		setlocal filetype=gitdiff
 		exe 'file ' . l:right_bufname
 	endif
 	windo diffthis

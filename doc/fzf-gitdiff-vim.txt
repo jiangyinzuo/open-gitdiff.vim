@@ -8,13 +8,16 @@ FZF-GITDIFF-VIM                                                *fzf-gitdiff-vim*
 `fzf_gitdiff#FillFZF` executes |fzf#run| with |g:fzf_gitdiff_cmd| command. You
 can define your own command like this:
 >
-	" fzf_gitdiff_comp#Complete is implemented with vim9class.
 	if v:version >= 901
-		command! -nargs=* -complete=custom,fzf_gitdiff_comp#Complete GitDiff call fzf_gitdiff#FillFZF(<f-args>)
+		command! -nargs=* -complete=custom,fzf_gitdiff_comp#Complete GitDiff call fzf_gitdiff#FillFZF('tabnew', <f-args>)
+		command! -nargs=* -complete=custom,fzf_gitdiff_comp#Complete GitDiffEdit call fzf_gitdiff#FillFZF('enew', <f-args>)
 	else
-		command! -nargs=* GitDiff call fzf_gitdiff#FillFZF(<f-args>)
+		command! -nargs=* GitDiff call fzf_gitdiff#FillFZF('tabnew', <f-args>)
+		command! -nargs=* GitDiffEdit call fzf_gitdiff#FillFZF('enew', <f-args>)
 	endif
 <
+
+The first argument is the open command (tabnew or enew) invoked by |fzf| `sink`.
 
 OPTIONS                                                *fzf-gitdiff-vim-options*
 
@@ -32,4 +35,4 @@ FZF window option for |fzf#run|. Default: `{ 'width': 0.8, 'height': 0.7 }`
 
                                                          *g:fzf_gitdiff_preview*
 
-Enable FZF preview (require python3 in $PATH). Default: 1
+Enable FZF preview (require python3 in $PATH). Default: `1`
