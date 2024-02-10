@@ -3,6 +3,8 @@
 FZF-GITDIFF-VIM                                                *fzf-gitdiff-vim*
 ==============================================================================
 
+FUNCTIONS                                            *fzf-gitdiff-vim-functions*
+------------------------------------------------------------------------------
                                                            *fzf_gitdiff#FillFZF*
 
 `fzf_gitdiff#FillFZF` executes |fzf#run| with |g:fzf_gitdiff_cmd| command. You
@@ -19,8 +21,19 @@ can define your own command like this:
 
 The first argument is the open command (tabnew or enew) invoked by |fzf| `sink`.
 
-OPTIONS                                                *fzf-gitdiff-vim-options*
+                                                      *fzf_gitdiff#OpenAllDiffs*
+`fzf_gitdiff#OpenAllDiffs` opens all git diffs, which does not depend on fzf.
+You can define your own command like this:
+>
+	if v:version >= 901
+		command! -nargs=* -complete=custom,fzf_gitdiff_comp#Complete GitDiffOpenAll call fzf_gitdiff#OpenAllDiffs(<f-args>)
+	else
+		command! -nargs=* GitDiffOpenAll call fzf_gitdiff#OpenAllDiffs(<f-args>)
+	endif
+<
 
+OPTIONS                                                *fzf-gitdiff-vim-options*
+------------------------------------------------------------------------------
                                                              *g:fzf_gitdiff_cmd*
 
 Git diff command to execute. Possible values:
@@ -36,3 +49,5 @@ FZF window option for |fzf#run|. Default: `{ 'width': 0.8, 'height': 0.7 }`
                                                          *g:fzf_gitdiff_preview*
 
 Enable FZF preview (require python3 in $PATH). Default: `1`
+
+vim:ft=help

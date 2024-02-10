@@ -16,9 +16,11 @@ Plug 'jiangyinzuo/fzf-gitdiff.vim'
 
 " fzf_gitdiff_comp#Complete is implemented with vim9class.
 if v:version >= 901
+    command! -nargs=* -complete=custom,fzf_gitdiff_comp#Complete GitDiffOpenAll call fzf_gitdiff#OpenAllDiffs(<f-args>)
     command! -nargs=* -complete=custom,fzf_gitdiff_comp#Complete GitDiff call fzf_gitdiff#FillFZF('tabnew', <f-args>)
     command! -nargs=* -complete=custom,fzf_gitdiff_comp#Complete GitDiffEdit call fzf_gitdiff#FillFZF('enew', <f-args>)
 else
+    command! -nargs=* GitDiffOpenAll call fzf_gitdiff#OpenAllDiffs(<f-args>)
     command! -nargs=* GitDiff call fzf_gitdiff#FillFZF('tabnew', <f-args>)
     command! -nargs=* GitDiffEdit call fzf_gitdiff#FillFZF('enew', <f-args>)
 endif
@@ -87,3 +89,9 @@ List diffs:
 
 In gitdiff buffer, `:OpenFile`/`:OpenFileTab` can open the origin file
 (lcd to `git rev-parse --show-toplevel`).
+
+Open all diffs between HEAD~2 and HEAD~1:
+```vim
+:GitDiffOpenAll HEAD~2 HEAD~1
+```
+This command does not depend on fzf.
