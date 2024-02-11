@@ -1,0 +1,116 @@
+*open-gitdiff-vim.txt*
+
+OPEN-GITDIFF-VIM                                              *open-gitdiff-vim*
+==============================================================================
+
+FUNCTIONS                                           *open-gitdiff-vim-functions*
+
+                                                           *open_gitdiff#select*
+
+open_gitdiff_select({open-cmd}, {view-function}, ...) displays the result of
+`git diff` command and opens the select one.
+
+{open-cmd} can be
+- `tabnew`: open git diff by |tabnew|
+- `enew`: open git diff by |enew|
+
+{view-function} should be a function. See |open-gitdiff-vim-custom-viewer|.
+
+... should be arguments of `git diff` command.
+
+Example:
+>
+	command -nargs=* QuickUIGitDiffTab
+		\ call open_gitdiff#select("tabnew", function("open_gitdiff#quickui#listbox#view"), <f-args>)
+	
+	:QuickUIGitDiffTab HEAD~1 HEAD
+	:QuickUIGitDiffTab HEAD~1
+	:QuickUIGitDiffTab HEAD~1..
+	:QuickUIGitDiffTab HEAD~2..HEAD~1
+	:QuickUIGitDiffTab --staged
+	:QuickUIGitDiffTab --staged master
+	:QuickUIGitDiffTab master --cached
+<
+                                                     *open_gitdiff#OpenAllDiffs*
+
+open_gitdiff#OpenAllDiffs(...) opens all git diffs at once in multiple tabs.
+
+... should be arguments of `git diff` command, same as |open_gitdiff#select|.
+
+                                                         *open_gitdiff#OpenDiff*
+
+open_gitdiff#OpenDiff({open-cmd}, ...) opens current file's git diff.
+
+{open-cmd} can be
+- `tabnew`: open git diff by |tabnew|
+- `enew`: open git diff by |enew|
+
+... should be arguments of `git diff` command, same as |open_gitdiff#select|.
+
+                                                    *open_gitdiff#comp#Complete*
+
+Complete function implemented with |vim9class|. Example:
+>
+	command -nargs=* -complete=custom,open_gitdiff#comp#Complete
+		\ GitDiffAll call open_gitdiff#OpenAllDiffs(<f-args>)
+<
+
+                                                *open-gitdiff-vim-custom-viewer*
+
+You can define your own viewer function with |open_gitdiff#open_diff| function.
+The viewer function has 3 parameters:
+>
+	function MyViewer(gitcmd, arglist, prompt)
+		...
+	endfunction
+<
+
+{gitcmd} is a string that stores the `git diff` command,
+may be `git diff --name-status -C HEAD~1 HEAD`
+
+{arglist} is a list<string> that stores the arguments of `git diff` command,
+may be `['HEAD~1', 'HEAD']`
+
+{prompt} is a string that can be used as a title, may be `HEAD~1..HEAD`
+
+                                                        *open_gitdiff#open_diff*
+
+open_gitdiff#open_diff({line}) parses the {line} and opens git diff. This
+function is used to define custom viewer function, see
+|open-gitdiff-vim-custom-viewer|.
+
+{line} should be a output line of `git diff --name-status` or
+`git diff --name-only`
+
+OPTIONS                                               *open-gitdiff-vim-options*
+------------------------------------------------------------------------------
+
+                                               *g:open_gitdiff_exclude_patterns*
+
+Do not open files matching any pattern in `g:open_gitdiff_exclude_patterns`
+list. Default: `[]`
+
+                                                            *g:open_gitdiff_cmd*
+
+Git diff command to execute. Possible values:
+
+  - `git diff --name-status -C` (default)
+  - `git diff --name-status`
+  - `git diff --name-only`
+
+                                                     *g:open_gitdiff_fzf_window*
+
+FZF window option for |fzf#run|. Default: `{ 'width': 0.8, 'height': 0.7 }`
+
+                                                    *g:open_gitdiff_fzf_preview*
+
+Enable FZF preview (require python3 in $PATH). Default: `1`
+
+                                                       *g:open_gitdiff_qf_nmaps*
+
+Define nmaps in quickfix window. Possible value:
+>
+	let g:open_gitdiff_qf_nmaps = {'open': '<leader>df', 'next': '<leader>dn', 'prev': '<leader>dp'}
+<
+
+vim:ft=help

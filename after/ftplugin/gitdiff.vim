@@ -1,6 +1,6 @@
 function s:OpenWorkingTree(open_command)
 	let l:filename = split(bufname(), ':\|//')[-1]
-	let toplevel = system('git rev-parse --show-toplevel')
+	let toplevel = system('git rev-parse --show-toplevel')->trim()
 	if a:open_command == 'tabnew'
 		tabnew
 		execute 'lcd ' . toplevel

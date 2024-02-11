@@ -1,9 +1,12 @@
+# Copyright (c) 2024 Yinzuo Jiang
+# License: MIT
+
 import sys
 import os
 import subprocess
 
 
-select = os.environ['fzf_gitdiff_select'].split('\t')
+select = os.environ['open_gitdiff_select'].split('\t')
 if len(select) > 1:
     select = select[1:]
 

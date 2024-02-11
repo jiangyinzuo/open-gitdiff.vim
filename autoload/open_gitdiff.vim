@@ -1,19 +1,17 @@
 " Copyright (c) 2024 Yinzuo Jiang
 " License: MIT
 
-let s:preview_py = 'python3 ' . expand('<sfile>:p:h:h') . '/fzf_preview.py '
-
 let s:state_open_command = 'tabnew'
 let s:state_diffoff = v:true
 
 function s:OpenDiff(left_filename, right_filename)
-	for pattern in get(g:, 'fzf_gitdiff_exclude_pattern', [])
+	for pattern in get(g:, 'open_gitdiff_exclude_patterns', [])
 		if a:left_filename =~# pattern || a:right_filename =~# pattern
 			return
 		endif
 	endfor
 	if !exists('s:git_diff_args')
-		echoerr 'Fill FZF with git diff first.'
+		echoerr 's:git_diff_args not set!'
 		return
 	endif
 	if len(s:git_diff_args) == 0
@@ -32,7 +30,7 @@ function s:OpenDiff(left_filename, right_filename)
 	endif
 
 	if s:state_diffoff
-		windo diffoff
+		bufdo diffoff
 	endif
 
 	" Create 2 windows, load 2 commit versions and enable diff mode
@@ -80,7 +78,8 @@ function s:OpenDiff(left_filename, right_filename)
 	windo diffthis
 endfunction
 
-function fzf_gitdiff#FzfSink(line)
+function open_gitdiff#open_diff(line)
+	" line: output line of `git diff --name-status` or `git diff --name-only`
 	let l:line = split(a:line, '\t')
 
 	if len(l:line) == 1
@@ -102,7 +101,7 @@ function fzf_gitdiff#FzfSink(line)
 endfunction
 
 function s:generate_cmd(arglist)
-	let l:cmd = get(g:, 'fzf_gitdiff_cmd', 'git diff --name-status -C')
+	let l:cmd = get(g:, 'open_gitdiff_cmd', 'git diff --name-status -C')
 	if len(a:arglist) > 0
 		let l:cmd .= ' ' . join(a:arglist, ' ')
 	endif
@@ -113,7 +112,7 @@ function s:set_git_diff_args_and_generate_prompt(arglist)
 	if len(a:arglist) == 1 && (a:arglist[0] == '--staged' || a:arglist[0] == '--cached')
 		" HEAD, staged area
 		let s:git_diff_args = ['HEAD', '']
-		let l:prompt = 'HEAD..staged area | '
+		let l:prompt = 'HEAD..staged area'
 	elseif len(a:arglist) == 1 && (a:arglist[0] =~# '\.\.\.')
 		echom 'unimplement git diff <commit>...<commit>'
 		return ''
@@ -123,16 +122,16 @@ function s:set_git_diff_args_and_generate_prompt(arglist)
 		let commits = split(a:arglist[0], '\.\.')
 		if len(commits) == 2
 			let s:git_diff_args = [commits[0], commits[1]]
-			let l:prompt = commits[0] . '..' . commits[1] . ' | '
+			let l:prompt = commits[0] . '..' . commits[1]
 		elseif len(commits) == 1
 			if a:arglist[0][0:1] == '..'
 				" git diff ..<commit>
 				let s:git_diff_args = ['HEAD', commits[0]]
-				let l:prompt = 'HEAD..' . commits[0] . ' | '
+				let l:prompt = 'HEAD..' . commits[0]
 			elseif a:arglist[0][-2:-1] == '..'
 				" git diff <commit>..
 				let s:git_diff_args = [commits[0], 'HEAD']
-				let l:prompt = commits[0] . '..HEAD | '
+				let l:prompt = commits[0] . '..HEAD'
 			else
 				echom 'invalid commit range: ' . a:arglist
 				return ''
@@ -144,35 +143,31 @@ function s:set_git_diff_args_and_generate_prompt(arglist)
 	elseif len(a:arglist) == 2 && (a:arglist[0] == '--staged' || a:arglist[0] == '--cached')
 		" a:arglist[1], staged area
 		let s:git_diff_args = [a:arglist[1], '']
-		let l:prompt = a:arglist[1] . '..staged area | '
+		let l:prompt = a:arglist[1] . '..staged area'
 	elseif len(a:arglist) == 2 && (a:arglist[1] == '--staged' || a:arglist[1] == '--cached')
 		" a:arglist[0], staged area
 		let s:git_diff_args = [a:arglist[0], '']
-		let l:prompt = a:arglist[0] . '..staged area | '
+		let l:prompt = a:arglist[0] . '..staged area'
 	elseif len(a:arglist) == 2 && (a:arglist[1] =~# '\.\.\.')
 		echom 'unimplement git diff <commit> <commit>...<commit>'
 		return ''
 	else
 		let s:git_diff_args = a:arglist
 		if len(a:arglist) == 0
-			let l:prompt = 'staged area..working tree | '
+			let l:prompt = 'staged area..working tree'
 		elseif len(a:arglist) == 1
 			" git diff <commit>
 			" This form is to view the changes you have in your working tree relative to the named <commit>
-			let l:prompt = a:arglist[0] . '..working tree | '
+			let l:prompt = a:arglist[0] . '..working tree'
 		else
-			let l:prompt = a:arglist[0] . '..' . a:arglist[1] .' | '
+			let l:prompt = a:arglist[0] . '..' . a:arglist[1]
 		endif
 	endif
 	return l:prompt
 endfunction
 
 " Reference: https://git-scm.com/docs/git-diff
-function fzf_gitdiff#FillFZF(state_open_command, ...)
-	if v:shell_error
-		echom 'Not a git repo'
-		return
-	endif
+function open_gitdiff#select(state_open_command, select_fn, ...)
 	if a:0 > 2
 		echoerr 'too many arguments'
 		return
@@ -184,21 +179,10 @@ function fzf_gitdiff#FillFZF(state_open_command, ...)
 	if empty(l:prompt)
 		return
 	endif
-
-	if get(g:, 'fzf_gitdiff_preview', 1)
-		let l:preview_cmd = '--preview "fzf_gitdiff_select={} ' . s:preview_py . join(a:000, ' ') . '" --preview-window "up,70%"'
-	else
-		let l:preview_cmd = ''
-	endif
-	" / will produce an error
-	call fzf#run(fzf#wrap(substitute(l:cmd, '/', '\\\\', 'g'), {
-				\ 'source': l:cmd, 'options': '--prompt "' . l:prompt . '" ' . l:preview_cmd,
-				\ 'sink': function('fzf_gitdiff#FzfSink'),
-				\ 'window': get(g:, 'fzf_gitdiff_window', { 'width': 0.8, 'height': 0.7 }),
-				\ }))
+	call a:select_fn(l:cmd, a:000, l:prompt)
 endfunction
 
-function fzf_gitdiff#OpenAllDiffs(...)
+function open_gitdiff#OpenAllDiffs(...)
 	let l:cmd = s:generate_cmd(a:000)
 	let l:prompt = s:set_git_diff_args_and_generate_prompt(a:000)
 	if empty(l:prompt)
@@ -207,18 +191,29 @@ function fzf_gitdiff#OpenAllDiffs(...)
 	let s:state_open_command = 'tabnew'
 	let lines = system(l:cmd)->split('\n')
 	for line in lines
-		call fzf_gitdiff#FzfSink(line)
+		call open_gitdiff#open_diff(line)
 		let s:state_diffoff = v:false
 	endfor
 	let s:state_diffoff = v:true
 endfunction
 
-function fzf_gitdiff#OpenDiff(state_open_command, ...)
+function open_gitdiff#OpenDiff(state_open_command, ...)
+	if &ft == 'gitdiff'
+		echom 'already in gitdiff'
+		return
+	endif
+	exe 'lcd ' . system('git rev-parse --show-toplevel')->trim()
+	let l:current_file_name = expand('%')
+	if empty(l:current_file_name)
+		echom 'no file name'
+		return
+	endif
+
 	let l:cmd = s:generate_cmd(a:000)
 	let l:prompt = s:set_git_diff_args_and_generate_prompt(a:000)
 	if empty(l:prompt)
 		return
 	endif
 	let s:state_open_command = a:state_open_command
-	call fzf_gitdiff#FzfSink(expand('%'))
+	call open_gitdiff#open_diff(l:current_file_name)
 endfunction
