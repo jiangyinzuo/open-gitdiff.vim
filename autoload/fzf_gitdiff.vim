@@ -6,6 +6,80 @@ let s:preview_py = 'python3 ' . expand('<sfile>:p:h:h') . '/fzf_preview.py '
 let s:state_open_command = 'tabnew'
 let s:state_diffoff = v:true
 
+function s:OpenDiff(left_filename, right_filename)
+	for pattern in get(g:, 'fzf_gitdiff_exclude_pattern', [])
+		if a:left_filename =~# pattern || a:right_filename =~# pattern
+			return
+		endif
+	endfor
+	if !exists('s:git_diff_args')
+		echoerr 'Fill FZF with git diff first.'
+		return
+	endif
+	if len(s:git_diff_args) == 0
+		" staged area, working directory
+		let left_commit = ':'
+		let right_commit = ''
+	elseif len(s:git_diff_args) == 1
+		" s:git_diff_args[0], working directory
+		let left_commit = s:git_diff_args[0] . ':'
+		let right_commit = ''
+	elseif len(s:git_diff_args) == 2
+		let left_commit = s:git_diff_args[0] . ':'
+		let right_commit = s:git_diff_args[1] . ':'
+	else
+		echoerr 's:git_diff_args too long!'
+	endif
+
+	if s:state_diffoff
+		windo diffoff
+	endif
+
+	" Create 2 windows, load 2 commit versions and enable diff mode
+	" left
+	let left_filename = left_commit . a:left_filename
+	let l:left_bufname = (left_commit == ':' ? 'gitdiff://(staged)' : 'gitdiff://') . left_filename
+	if bufexists(l:left_bufname)
+		silent! exe 'b ' . l:left_bufname
+	else
+		execute s:state_open_command
+		silent! execute '0read !git show "' . left_filename  . '"  2>/dev/null'
+		silent! exe 'file ' . l:left_bufname
+		setlocal bufhidden=hide
+		setlocal nomodifiable
+		setlocal nomodified
+		setlocal readonly
+		setlocal filetype=gitdiff
+	endif
+
+	silent! only
+
+	" right
+	let right_filename = right_commit . a:right_filename
+	let l:right_bufname = (right_commit == ':' ? 'gitdiff://(staged)' : 'gitdiff://') . right_filename
+	if bufexists(l:right_bufname)
+		silent! exe 'vertical sb ' . l:right_bufname
+	else
+		vnew
+		if right_commit == ''
+			try
+				silent! exe '0r ' . system('git rev-parse --show-toplevel')->trim() . '/' . a:right_filename
+			catch /./
+				call append(0, v:exception)
+			endtry
+		else
+			silent! execute '0read !git show "' . right_filename . '"  2>/dev/null'
+		endif
+		setlocal bufhidden=hide
+		setlocal nomodifiable
+		setlocal nomodified
+		setlocal readonly
+		setlocal filetype=gitdiff
+		silent! exe 'file ' . l:right_bufname
+	endif
+	windo diffthis
+endfunction
+
 function fzf_gitdiff#FzfSink(line)
 	let l:line = split(a:line, '\t')
 
@@ -139,72 +213,12 @@ function fzf_gitdiff#OpenAllDiffs(...)
 	let s:state_diffoff = v:true
 endfunction
 
-function s:OpenDiff(left_filename, right_filename)
-	if !exists('s:git_diff_args')
-		echoerr 'Fill FZF with git diff first.'
+function fzf_gitdiff#OpenDiff(state_open_command, ...)
+	let l:cmd = s:generate_cmd(a:000)
+	let l:prompt = s:set_git_diff_args_and_generate_prompt(a:000)
+	if empty(l:prompt)
 		return
 	endif
-	if len(s:git_diff_args) == 0
-		" staged area, working directory
-		let left_commit = ':'
-		let right_commit = ''
-	elseif len(s:git_diff_args) == 1
-		" s:git_diff_args[0], working directory
-		let left_commit = s:git_diff_args[0] . ':'
-		let right_commit = ''
-	elseif len(s:git_diff_args) == 2
-		let left_commit = s:git_diff_args[0] . ':'
-		let right_commit = s:git_diff_args[1] . ':'
-	else
-		echoerr 's:git_diff_args too long!'
-	endif
-
-	if s:state_diffoff
-		windo diffoff
-	endif
-
-	" Create 2 windows, load 2 commit versions and enable diff mode
-	" left
-	let left_filename = left_commit . a:left_filename
-	let l:left_bufname = (left_commit == ':' ? 'gitdiff://(staged)' : 'gitdiff://') . left_filename
-	if bufexists(l:left_bufname)
-		silent! exe 'b ' . l:left_bufname
-	else
-		execute s:state_open_command
-		silent! execute '0read !git show "' . left_filename  . '"  2>/dev/null'
-		silent! exe 'file ' . l:left_bufname
-		setlocal bufhidden=hide
-		setlocal nomodifiable
-		setlocal nomodified
-		setlocal readonly
-		setlocal filetype=gitdiff
-	endif
-
-	silent! only
-
-	" right
-	let right_filename = right_commit . a:right_filename
-	let l:right_bufname = (right_commit == ':' ? 'gitdiff://(staged)' : 'gitdiff://') . right_filename
-	if bufexists(l:right_bufname)
-		silent! exe 'vertical sb ' . l:right_bufname
-	else
-		vnew
-		if right_commit == ''
-			try
-				silent! exe '0r ' . system('git rev-parse --show-toplevel')->trim() . '/' . a:right_filename
-			catch /./
-				call append(0, v:exception)
-			endtry
-		else
-			silent! execute '0read !git show "' . right_filename . '"  2>/dev/null'
-		endif
-		setlocal bufhidden=hide
-		setlocal nomodifiable
-		setlocal nomodified
-		setlocal readonly
-		setlocal filetype=gitdiff
-		silent! exe 'file ' . l:right_bufname
-	endif
-	windo diffthis
+	let s:state_open_command = a:state_open_command
+	call fzf_gitdiff#FzfSink(expand('%'))
 endfunction
-
