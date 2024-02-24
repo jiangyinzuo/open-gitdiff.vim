@@ -4,6 +4,8 @@
 opens git diff using quickfix, [fzf](https://github.com/junegunn/fzf),
 [vim-quickui](https://github.com/skywind3000/vim-quickui), ...
 
+Require vim8+
+
 ## Installation and Setups
 
 Install using [vim-plug](https://github.com/junegunn/vim-plug)
