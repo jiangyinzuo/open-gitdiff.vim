@@ -14,6 +14,8 @@ Install using [vim-plug](https://github.com/junegunn/vim-plug)
 " optional dependencies
 Plug 'junegunn/fzf'
 Plug 'skywind3000/vim-quickui'
+" command completion for :GitDiff2Paths
+Plug 'tpope/vim-fugitive'
 
 Plug 'jiangyinzuo/open-gitdiff.vim'
 
@@ -36,15 +38,19 @@ exe command_def . 'QuickUIGitDiffTab call open_gitdiff#select("tabnew", function
 exe command_def . 'QuickUIGitDiff call open_gitdiff#select("enew", function("open_gitdiff#quickui#listbox#view"), <f-args>)'
 
 exe command_def . 'QfGitDiff call open_gitdiff#select("enew", function("open_gitdiff#quickfix#view"), <f-args>)'
+
+command -nargs=+ -complete=customlist,fugitive#LogComplete GitDiff2Paths call open_gitdiff#open_diff_by_path(<f-args>)
 ```
 
 ## Usage
 
-The above commands accept 0-2 arguments, which are passed to git diff
+The above commands accept 0-N arguments, which are passed to git diff
 command. `<commit>`, `<commit>..<commit>` or `--cached` `--staged` can be
 used (see [git-diff docs](https://git-scm.com/docs/git-diff)). The following `<f-args>` are valid:
 ```vim
 " Commands can be replaced to any command defined above.
+:QuickUIGitDiffTab
+:QuickUIGitDiffTab path/to/file
 :QuickUIGitDiffTab HEAD~1 HEAD
 :QuickUIGitDiffTab HEAD~1
 :QuickUIGitDiffTab HEAD~1..
@@ -52,6 +58,7 @@ used (see [git-diff docs](https://git-scm.com/docs/git-diff)). The following `<f
 :QuickUIGitDiffTab --staged
 :QuickUIGitDiffTab --staged master
 :QuickUIGitDiffTab master --cached
+:QuickUIGitDiffTab master --cached -- path/to/file
 ```
 
 You can customize git diff command with `g:open_gitdiff_cmd`:
@@ -69,6 +76,8 @@ let g:open_gitdiff_cmd = 'git diff --name-status -C'
 ![GitDiffAll](https://github.com/jiangyinzuo/open-gitdiff.vim/assets/40995042/6f044b91-c982-4f7f-8c7f-db68c91963e6)
 `:GitDiffThisTab` opens the current file in new tab.  
 `:GitDiffThis` opens the current file in current window.  
+
+`:GitDiff2Paths` opens and diffs the two paths in current window.
 
 ### View `git diff` in FZF
 

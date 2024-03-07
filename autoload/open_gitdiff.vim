@@ -2,7 +2,66 @@
 " License: MIT
 
 let s:state_open_command = 'tabnew'
+" do not diffoff when calling s:OpenDiff
 let s:state_diffoff = v:true
+
+function s:OpenDiffByPath(left_commit, left_filename, right_commit, right_filename)
+	if s:state_diffoff
+		diffoff!
+	endif
+
+	" Create 2 windows, load 2 commit versions and enable diff mode
+	" left
+	let left_path = a:left_commit . a:left_filename
+	let l:left_bufname = (a:left_commit == ':' ? 'gitdiff://(staged)' : 'gitdiff://') . left_path
+	if bufexists(l:left_bufname)
+		silent! exe 'b ' . l:left_bufname
+	else
+		execute s:state_open_command
+		if a:left_commit == ''
+			try
+				silent! exe '0r ' . a:left_filename
+			catch /./
+				call append(0, v:exception)
+			endtry
+		else
+			silent! execute '0read !git show "' . left_path. '"  2>/dev/null'
+		endif
+		silent! exe 'file ' . l:left_bufname
+		setlocal bufhidden=hide
+		setlocal nomodifiable
+		setlocal nomodified
+		setlocal readonly
+		setlocal filetype=gitdiff
+	endif
+
+	silent! only
+
+	" right
+	let right_path = a:right_commit . a:right_filename
+	let l:right_bufname = (a:right_commit == ':' ? 'gitdiff://(staged)' : 'gitdiff://') . right_path
+	if bufexists(l:right_bufname)
+		silent! exe 'vertical sb ' . l:right_bufname
+	else
+		vnew
+		if a:right_commit == ''
+			try
+				silent! exe '0r ' . a:right_filename
+			catch /./
+				call append(0, v:exception)
+			endtry
+		else
+			silent! execute '0read !git show "' . right_path. '"  2>/dev/null'
+		endif
+		setlocal bufhidden=hide
+		setlocal nomodifiable
+		setlocal nomodified
+		setlocal readonly
+		setlocal filetype=gitdiff
+		silent! exe 'file ' . l:right_bufname
+	endif
+	windo diffthis
+endfunction
 
 function s:OpenDiff(left_filename, right_filename)
 	for pattern in get(g:, 'open_gitdiff_exclude_patterns', [])
@@ -29,53 +88,33 @@ function s:OpenDiff(left_filename, right_filename)
 		echoerr 's:git_diff_args too long!'
 	endif
 
-	if s:state_diffoff
-		bufdo diffoff
-	endif
+	let right_filename = right_commit == '' ? system('git rev-parse --show-toplevel')->trim() . '/' . a:right_filename : a:right_filename
+	call s:OpenDiffByPath(left_commit, a:left_filename, right_commit, right_filename)
+endfunction
 
-	" Create 2 windows, load 2 commit versions and enable diff mode
-	" left
-	let left_filename = left_commit . a:left_filename
-	let l:left_bufname = (left_commit == ':' ? 'gitdiff://(staged)' : 'gitdiff://') . left_filename
-	if bufexists(l:left_bufname)
-		silent! exe 'b ' . l:left_bufname
-	else
-		execute s:state_open_command
-		silent! execute '0read !git show "' . left_filename  . '"  2>/dev/null'
-		silent! exe 'file ' . l:left_bufname
-		setlocal bufhidden=hide
-		setlocal nomodifiable
-		setlocal nomodified
-		setlocal readonly
-		setlocal filetype=gitdiff
+" git diff [<options>] --no-index [--] <path> <path>
+function open_gitdiff#open_diff_by_path(...)
+	if a:0 < 2
+		echom 'Usage: :GitDiffPath <left_path> <right_path>'
+		return
 	endif
-
-	silent! only
-
-	" right
-	let right_filename = right_commit . a:right_filename
-	let l:right_bufname = (right_commit == ':' ? 'gitdiff://(staged)' : 'gitdiff://') . right_filename
-	if bufexists(l:right_bufname)
-		silent! exe 'vertical sb ' . l:right_bufname
-	else
-		vnew
-		if right_commit == ''
-			try
-				silent! exe '0r ' . system('git rev-parse --show-toplevel')->trim() . '/' . a:right_filename
-			catch /./
-				call append(0, v:exception)
-			endtry
-		else
-			silent! execute '0read !git show "' . right_filename . '"  2>/dev/null'
-		endif
-		setlocal bufhidden=hide
-		setlocal nomodifiable
-		setlocal nomodified
-		setlocal readonly
-		setlocal filetype=gitdiff
-		silent! exe 'file ' . l:right_bufname
+	let l:left_path = a:000[0]->split(':', 1)
+	let l:right_path = a:000[1]->split(':', 1)
+	if len(l:left_path) == 1
+		let l:left_commit = ''
+		let l:left_filename = l:left_path[0]
+	elseif len(l:left_path) == 2
+		let l:left_commit = l:left_path[0] . ':'
+		let l:left_filename = l:left_path[1]
 	endif
-	windo diffthis
+	if len(l:right_path) == 1
+		let l:right_commit = ''
+		let l:right_filename = l:right_path[0]
+	elseif len(l:right_path) == 2
+		let l:right_commit = l:right_path[0] . ':'
+		let l:right_filename = l:right_path[1]
+	endif
+	call s:OpenDiffByPath(l:left_commit, l:left_filename, l:right_commit, l:right_filename)
 endfunction
 
 function open_gitdiff#open_diff(line)
@@ -109,21 +148,21 @@ function s:generate_cmd(arglist)
 endfunction
 
 function s:set_git_diff_args_and_generate_prompt(arglist)
-	if len(a:arglist) == 1 && (a:arglist[0] == '--staged' || a:arglist[0] == '--cached')
+	if len(a:arglist) >= 1 && (a:arglist[0] == '--staged' || a:arglist[0] == '--cached')
 		" HEAD, staged area
 		let s:git_diff_args = ['HEAD', '']
 		let l:prompt = 'HEAD..staged area'
-	elseif len(a:arglist) == 1 && (a:arglist[0] =~# '\.\.\.')
+	elseif len(a:arglist) >= 1 && (a:arglist[0] =~# '\.\.\.')
 		echom 'unimplement git diff <commit>...<commit>'
 		return ''
-	elseif len(a:arglist) == 1 && (a:arglist[0] =~# '\.\.')
+	elseif len(a:arglist) >= 1 && (a:arglist[0] =~# '\.\.')
 		" If <commit> on one side is omitted, it will have the same effect as using HEAD instead.
 		" commit1..commit2
 		let commits = split(a:arglist[0], '\.\.')
-		if len(commits) == 2
+		if len(commits) >= 2
 			let s:git_diff_args = [commits[0], commits[1]]
 			let l:prompt = commits[0] . '..' . commits[1]
-		elseif len(commits) == 1
+		elseif len(commits) >= 1
 			if a:arglist[0][0:1] == '..'
 				" git diff ..<commit>
 				let s:git_diff_args = ['HEAD', commits[0]]
@@ -140,38 +179,44 @@ function s:set_git_diff_args_and_generate_prompt(arglist)
 			echom 'at most 2 commits'
 			return ''
 		endif
-	elseif len(a:arglist) == 2 && (a:arglist[0] == '--staged' || a:arglist[0] == '--cached')
+	elseif len(a:arglist) >= 2 && (a:arglist[0] == '--staged' || a:arglist[0] == '--cached')
 		" a:arglist[1], staged area
 		let s:git_diff_args = [a:arglist[1], '']
 		let l:prompt = a:arglist[1] . '..staged area'
-	elseif len(a:arglist) == 2 && (a:arglist[1] == '--staged' || a:arglist[1] == '--cached')
+	elseif len(a:arglist) >= 2 && (a:arglist[1] == '--staged' || a:arglist[1] == '--cached')
 		" a:arglist[0], staged area
 		let s:git_diff_args = [a:arglist[0], '']
 		let l:prompt = a:arglist[0] . '..staged area'
-	elseif len(a:arglist) == 2 && (a:arglist[1] =~# '\.\.\.')
+	elseif len(a:arglist) >= 2 && (a:arglist[1] =~# '\.\.\.')
 		echom 'unimplement git diff <commit> <commit>...<commit>'
 		return ''
 	else
-		let s:git_diff_args = a:arglist
-		if len(a:arglist) == 0
-			let l:prompt = 'staged area..working tree'
-		elseif len(a:arglist) == 1
-			" git diff <commit>
-			" This form is to view the changes you have in your working tree relative to the named <commit>
-			let l:prompt = a:arglist[0] . '..working tree'
-		else
-			let l:prompt = a:arglist[0] . '..' . a:arglist[1]
+		if len(a:arglist) > 0
+			let first_is_commit = system('git cat-file -t ' . a:arglist[0] . ' 2>/dev/null')->trim() == 'commit'
+			if first_is_commit
+				if len(a:arglist) >= 2
+					let second_is_commit = system('git cat-file -t ' . a:arglist[1] . ' 2>/dev/null')->trim() == 'commit'
+					if second_is_commit
+						" git diff <commit> <commit>
+						let s:git_diff_args = a:arglist[:1]
+						return a:arglist[0] . '..' . a:arglist[1]
+					endif
+				endif
+				" This form is to view the changes you have in your working tree relative to the named <commit>
+				" git diff <commit>
+				let s:git_diff_args = a:arglist[:0]
+				return a:arglist[0] . '..working tree'
+			endif
 		endif
+		" git diff
+		let s:git_diff_args = a:arglist[:0]
+		let l:prompt = 'staged area..working tree'
 	endif
 	return l:prompt
 endfunction
 
 " Reference: https://git-scm.com/docs/git-diff
 function open_gitdiff#select(state_open_command, select_fn, ...)
-	if a:0 > 2
-		echoerr 'too many arguments'
-		return
-	endif
 	let l:cmd = s:generate_cmd(a:000)
 	let s:state_open_command = a:state_open_command
 

@@ -32,7 +32,26 @@ endclass
 var gitdiff_cache: FileCache = FileCache.new()
 var gitdir_cache: FileCache = FileCache.new()
 
+def ShouldOnlyCompleteFileFolder(arglead: string, cmdline: string): bool
+	if arglead == '--'
+		return false
+	endif
+	var cmdargs = cmdline->split(' ')
+	if len(cmdargs) >= 4
+		return true
+	endif
+	for cmdarg in cmdargs
+		if cmdarg == '--'
+			return true
+		endif
+	endfor
+	return false
+enddef
+
 export def Complete(arglead: string, cmdline: string, cursorpos: number): string
+	if ShouldOnlyCompleteFileFolder(arglead, cmdline)
+		return glob(arglead .. '*')
+	endif
 	const filename = expand('%:p')
 	var gitdir: string = gitdir_cache.Get(filename)
 	if empty(gitdir)
@@ -44,5 +63,5 @@ export def Complete(arglead: string, cmdline: string, cursorpos: number): string
 		cache = system('git rev-parse --symbolic --branches --tags --remotes') .. "FETCH_HEAD\nHEAD\nORIG_HEAD\n--staged\n--cached"
 		gitdiff_cache.Update(gitdir, cache)
 	endif
-	return cache
+	return glob(arglead .. '*') .. "\n" .. cache
 enddef
