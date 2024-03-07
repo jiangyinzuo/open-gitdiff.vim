@@ -2,11 +2,9 @@
 " License: MIT
 
 let s:state_open_command = 'tabnew'
-" do not diffoff when calling s:OpenDiff
-let s:state_diffoff = v:true
 
-function s:OpenDiffByPath(left_commit, left_filename, right_commit, right_filename)
-	if s:state_diffoff
+function s:OpenDiffByPath(left_commit, left_filename, right_commit, right_filename, diffoff)
+	if a:diffoff
 		diffoff!
 	endif
 
@@ -63,7 +61,7 @@ function s:OpenDiffByPath(left_commit, left_filename, right_commit, right_filena
 	windo diffthis
 endfunction
 
-function s:OpenDiff(left_filename, right_filename)
+function s:OpenDiff(left_filename, right_filename, diffoff)
 	for pattern in get(g:, 'open_gitdiff_exclude_patterns', [])
 		if a:left_filename =~# pattern || a:right_filename =~# pattern
 			return
@@ -89,7 +87,7 @@ function s:OpenDiff(left_filename, right_filename)
 	endif
 
 	let right_filename = right_commit == '' ? system('git rev-parse --show-toplevel')->trim() . '/' . a:right_filename : a:right_filename
-	call s:OpenDiffByPath(left_commit, a:left_filename, right_commit, right_filename)
+	call s:OpenDiffByPath(left_commit, a:left_filename, right_commit, right_filename, a:diffoff)
 endfunction
 
 " git diff [<options>] --no-index [--] <path> <path>
@@ -114,26 +112,31 @@ function open_gitdiff#open_diff_by_path(...)
 		let l:right_commit = l:right_path[0] . ':'
 		let l:right_filename = l:right_path[1]
 	endif
-	call s:OpenDiffByPath(l:left_commit, l:left_filename, l:right_commit, l:right_filename)
+	let s:state_open_command = 'tabnew'
+	call s:OpenDiffByPath(l:left_commit, l:left_filename, l:right_commit, l:right_filename, v:false)
 endfunction
 
 function open_gitdiff#open_diff(line)
+	call s:open_diff(a:line, v:true)
+endfunction
+
+function s:open_diff(line, diffoff)
 	" line: output line of `git diff --name-status` or `git diff --name-only`
 	let l:line = split(a:line, '\t')
 
 	if len(l:line) == 1
 		" git diff --name-only
 		let l:filename = l:line[0]
-		call s:OpenDiff(l:filename, l:filename)
+		call s:OpenDiff(l:filename, l:filename, a:diffoff)
 		return
 	endif
 
 	if l:line[0][0] == 'R' || l:line[0][0] == 'C'
 		" 'R097' 'C062'
-		call s:OpenDiff(l:line[1], l:line[2])
+		call s:OpenDiff(l:line[1], l:line[2], a:diffoff)
 	elseif l:line[0] == 'M' || l:line[0] == 'A' || l:line[0] == 'D'
 		let l:filename = l:line[1]
-		call s:OpenDiff(l:filename, l:filename)
+		call s:OpenDiff(l:filename, l:filename, a:diffoff)
 	else
 		echom 'Unimplemented status: ' . l:line[0]
 	endif
@@ -235,11 +238,11 @@ function open_gitdiff#OpenAllDiffs(...)
 	endif
 	let s:state_open_command = 'tabnew'
 	let lines = system(l:cmd)->split('\n')
+	let l:diffoff = true
 	for line in lines
-		call open_gitdiff#open_diff(line)
-		let s:state_diffoff = v:false
+		call s:open_diff(line, l:diffoff)
+		let l:diffoff = false
 	endfor
-	let s:state_diffoff = v:true
 endfunction
 
 function open_gitdiff#OpenDiff(state_open_command, ...)
