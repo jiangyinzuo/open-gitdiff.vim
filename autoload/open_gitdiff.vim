@@ -192,6 +192,11 @@ function s:set_git_diff_args_and_generate_prompt(arglist)
 		return ''
 	else
 		if len(a:arglist) > 0
+			if a:arglist[0] == '--'
+				" git diff -- <path> <path>
+				let s:git_diff_args = []
+				return 'staged area..working tree'
+			endif
 			let first_is_commit = system('git cat-file -t ' . a:arglist[0] . ' 2>/dev/null')->trim() == 'commit'
 			if first_is_commit
 				if len(a:arglist) >= 2
