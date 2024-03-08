@@ -3,6 +3,19 @@
 
 let s:state_open_command = 'tabnew'
 
+function open_gitdiff#read_file(commit, filename)
+	" commit may be ':'
+	if a:commit == ''
+		try
+			silent! exe '0r ' . a:filename
+		catch /./
+			call append(0, v:exception)
+		endtry
+	else
+		silent! execute '0read !git show "' . a:commit . a:filename . '"  2>/dev/null'
+	endif
+endfunction
+
 function s:OpenDiffByPath(left_commit, left_filename, right_commit, right_filename, diffoff)
 	if a:diffoff
 		diffoff!
@@ -16,15 +29,7 @@ function s:OpenDiffByPath(left_commit, left_filename, right_commit, right_filena
 		silent! exe 'b ' . l:left_bufname
 	else
 		execute s:state_open_command
-		if a:left_commit == ''
-			try
-				silent! exe '0r ' . a:left_filename
-			catch /./
-				call append(0, v:exception)
-			endtry
-		else
-			silent! execute '0read !git show "' . left_path. '"  2>/dev/null'
-		endif
+		call open_gitdiff#read_file(a:left_commit, a:left_filename)
 		silent! exe 'file ' . l:left_bufname
 		setlocal bufhidden=hide
 		setlocal nomodifiable
@@ -42,15 +47,7 @@ function s:OpenDiffByPath(left_commit, left_filename, right_commit, right_filena
 		silent! exe 'vertical sb ' . l:right_bufname
 	else
 		vnew
-		if a:right_commit == ''
-			try
-				silent! exe '0r ' . a:right_filename
-			catch /./
-				call append(0, v:exception)
-			endtry
-		else
-			silent! execute '0read !git show "' . right_path. '"  2>/dev/null'
-		endif
+		call open_gitdiff#read_file(a:right_commit, a:right_filename)
 		setlocal bufhidden=hide
 		setlocal nomodifiable
 		setlocal nomodified

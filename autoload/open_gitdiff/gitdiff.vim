@@ -1,3 +1,24 @@
+function open_gitdiff#gitdiff#update_diff()
+	" bufname starts with `gitdiff://`
+	let l:file_path = split(bufname()[10:], ':', 1)
+	if len(l:file_path) == 1
+		let l:commit = ''
+	elseif l:file_path[0] == '(staged)'
+		let l:commit = ':'
+	else
+		let l:commit = l:file_path[0]
+	endif
+	set modifiable
+	set noreadonly
+	silent! normal ggdG
+	call open_gitdiff#read_file(l:commit, l:file_path[-1])
+	normal gg
+	set nomodifiable
+	set readonly
+	set nomodified
+	echom 'reload ' . l:commit . l:file_path[-1]
+endfunction
+
 function open_gitdiff#gitdiff#open_file(open_command)
 	let l:filename = split(bufname(), ':\|//')[-1]
 	let toplevel = system('git rev-parse --show-toplevel')->trim()
@@ -5,7 +26,7 @@ function open_gitdiff#gitdiff#open_file(open_command)
 		only
 		enew
 		execute 'lcd ' . toplevel
-		execute a:open_command . ' ' . l:filename
+		execute 'e ' . l:filename
 	else
 		execute a:open_command
 		execute 'lcd ' . toplevel
