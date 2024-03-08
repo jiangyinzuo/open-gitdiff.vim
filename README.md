@@ -119,8 +119,11 @@ window for opening git diffs.
 
 ### Commands in gitdiff Buffer
 
-In gitdiff buffer, `:OpenFile`/`:OpenFileTab` can open the origin file
-and lcd to `git rev-parse --show-toplevel`.
+In gitdiff buffer, `:OpenFile`/`:OpenFileTab`/`:OpenFileVsp`/`:OpenFileTop` can
+open the origin file and lcd to `git rev-parse --show-toplevel`.
+You can use `:diffthis` after `:OpenFileVsp` or `:OpenFileTop`.
+
+![OpenDiffTop](https://github.com/jiangyinzuo/open-gitdiff.vim/assets/40995042/24a89d9f-d1ce-4f5b-9e3a-b0c5b5529c53)
 
 ## Custom viewers
 
