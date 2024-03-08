@@ -125,6 +125,10 @@ You can use `:diffthis` after `:OpenFileVsp` or `:OpenFileTop`.
 
 ![OpenDiffTop](https://github.com/jiangyinzuo/open-gitdiff.vim/assets/40995042/24a89d9f-d1ce-4f5b-9e3a-b0c5b5529c53)
 
+### Delete All gitdiff Buffers
+
+`:BDelAllGitdiffs`
+
 ## Custom viewers
 
 You can define your own viewer function with `open_gitdiff#open_diff` function.

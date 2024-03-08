@@ -235,10 +235,10 @@ function open_gitdiff#OpenAllDiffs(...)
 	endif
 	let s:state_open_command = 'tabnew'
 	let lines = system(l:cmd)->split('\n')
-	let l:diffoff = true
+	let l:diffoff = v:true
 	for line in lines
 		call s:open_diff(line, l:diffoff)
-		let l:diffoff = false
+		let l:diffoff = v:false
 	endfor
 endfunction
 
@@ -262,3 +262,5 @@ function open_gitdiff#OpenDiff(state_open_command, ...)
 	let s:state_open_command = a:state_open_command
 	call open_gitdiff#open_diff(l:current_file_name)
 endfunction
+
+command -nargs=0 BDelAllGitdiffs :bufdo if &filetype == 'gitdiff' | bd | endif
