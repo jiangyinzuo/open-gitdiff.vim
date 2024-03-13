@@ -90,11 +90,11 @@ endfunction
 " git diff [<options>] --no-index [--] <path> <path>
 function open_gitdiff#open_diff_by_path(...)
 	if a:0 < 2
-		echom 'Usage: :GitDiffPath <left_path> <right_path>'
+		echom 'need 2 args: <left_path> <right_path>'
 		return
 	endif
-	let l:left_path = a:000[0]->split(':', 1)
-	let l:right_path = a:000[1]->split(':', 1)
+	let l:left_path = expand(a:000[0])->split(':', 1)
+	let l:right_path = expand(a:000[1])->split(':', 1)
 	if len(l:left_path) == 1
 		let l:left_commit = ''
 		let l:left_filename = l:left_path[0]
